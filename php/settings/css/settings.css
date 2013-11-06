@@ -45,6 +45,8 @@ table:not(.nostyle) { width:100%; }
 #rightcontent { padding-left: 1em; }
 div.quota { float:right; display:block; position:absolute; right:25em; top:-1px; }
 div.quota-select-wrapper { position: relative; }
+div.recoveryPassword { left:50em; display:block; position:absolute; top:-1px; }
+input#recoveryPassword {width:15em;}
 select.quota { position:absolute; left:0; top:0; width:10em; }
 select.quota-user { position:relative; left:0; top:0; width:10em; }
 div.quota>span { position:absolute; right:0; white-space:nowrap; top:.7em; color:#888; text-shadow:0 1px 0 #fff; }
@@ -55,6 +57,8 @@ select.quota.active { background: #fff; }
 #newuser .multiselect { top:1px; }
 #headerGroups, #headerSubAdmins, #headerQuota { padding-left:18px; }
 
+.ie8 table.hascontrols{border-collapse:collapse;width: 100%;}
+.ie8 table.hascontrols tbody tr{border-collapse:collapse;border: 1px solid #ddd !important;}
 
 /* APPS */
 .appinfo { margin: 1em; }
@@ -89,3 +93,7 @@ table.shareAPI td { padding-bottom: 0.8em; }
 /* HELP */
 .pressed {background-color:#DDD;}
 
+/* fix hidden groups in firefox */
+ul.multiselectoptions > li {
+	overflow: visible !important;
+}

@@ -15,7 +15,7 @@
 	<div id="contacts-settings">
 			<h3 class="settings action text" tabindex="0" role="button" title="<?php p($l->t('Settings')); ?>"></h3>
 			<h2 data-id="addressbooks" tabindex="0" role="button"><?php p($l->t('Address books')); ?></h2>
-				<ul class="hidden">
+				<ul class="hidden addressbooklist">
 				</ul>
 				<button class="addaddressbook icon-plus text"><?php p($l->t('New')); ?></button>
 				<ul class="hidden">
@@ -26,26 +26,17 @@
 					</li>
 				</ul>
 			<h2 data-id="import" tabindex="0" role="button"><?php p($l->t('Import')); ?></h2>
-				<ul class="hidden">
+				<ul>
 					<li class="import-upload">
-						<form id="import_upload_form" action="<?php print_unescaped(OCP\Util::linkTo('contacts', 'ajax/uploadimport.php')); ?>" method="post" enctype="multipart/form-data" target="import_upload_target">
-						<input type="hidden" name="MAX_FILE_SIZE" value="<?php p($_['uploadMaxFilesize']) ?>" id="max_upload">
-						<label for="import_fileupload"><?php p($l->t('Select files to import')); ?>
-							<button class="import-upload-button" title="<?php p($l->t('Select files')); ?>"></button>
-						</label>
-						<input id="import_fileupload" type="file" accept="text/vcard,text/x-vcard,text/directory" multiple="multiple" name="importfile" />
-						</form>
-						<iframe name="import_upload_target" id='import_upload_target' src=""></iframe>
-					</li>
-					<li class="import-select hidden"><label><?php p($l->t('Import into:')); ?></label></li>
-					<li class="import-select hidden">
-						<select id="import_into" title="<?php p($l->t('Import into:')); ?>">
+						<select id="import_into">
+							<option value="-1"><?php p($l->t('Import into...')); ?></option>
 						</select>
-					<button class="doImport"><?php p($l->t('OK')); ?></button>
+						<button class="svg tooltipped rightwards import-upload-button" title="<?php p($l->t('Select file...')); ?>"></button>
+						<input id="import_upload_start" class="tooltipped rightwards" title="<?php p($l->t('Select file...')); ?>" type="file" accept="text/vcard,text/x-vcard,text/directory" name="file" disabled />
 					</li>
-					<li>
+					<li class="import-status">
 						<label id="import-status-text"></label>
-						<div id="import-progress"></div>
+						<div id="import-status-progress"></div>
 					</li>
 				</ul>
 	</div>
@@ -207,6 +198,9 @@
 			<div class="groupscontainer propertycontainer" data-element="categories">
 				<select id="contactgroups" title="<?php p($l->t('Select groups')); ?>" name="value" multiple></select>
 			</div>
+			<div>
+				<select class="hidden" id="contactaddressbooks" title="<?php p($l->t('Select address book')); ?>" name="value"></select>
+			</div>
 			<dl class="form">
 				<dt data-element="nickname">
 					<?php p($l->t('Nickname')); ?>
@@ -297,7 +291,7 @@
 				</select>
 				<input type="checkbox" class="parameter tooltipped rightwards" data-parameter="TYPE" name="parameters[TYPE][]" value="PREF" title="<?php p($l->t('Preferred')); ?>" />
 			</span>
-			<input type="email" class="nonempty value" name="value" value="{value}" x-moz-errormessage="<?php p($l->t('Please specify a valid email address.')); ?>" placeholder="<?php p($l->t('someone@example.com')); ?>" required />
+			<input type="email" class="nonempty value" name="value" value="{value}" x-moz-errormessage="<?php p($l->t('Please specify a valid email address.')); ?>" placeholder="someone@example.com" required />
 			<span class="listactions">
 				<a class="action mail tooltipped leftwards" title="<?php p($l->t('Mail to address')); ?>"></a>
 				<a role="button" class="action delete tooltipped leftwards" title="<?php p($l->t('Delete email address')); ?>"></a>
@@ -351,27 +345,28 @@
 					</select>
 					<input type="checkbox" id="adr_pref_{idx}" class="parameter tooltipped downwards" data-parameter="TYPE" name="parameters[TYPE][]" value="PREF" title="<?php p($l->t('Preferred')); ?>" /><label for="adr_pref_{idx}"><?php p($l->t('Preferred')); ?></label>
 				</li>
-				<li>
+				<li><!-- Note to translators: The placeholders for address properties should be a well known address
+						so users can see where the data belongs according to https://tools.ietf.org/html/rfc2426#section-3.2.1 -->
 					<input class="value stradr tooltipped rightwards onfocus" type="text" id="adr_2" name="value[2]" value="{adr2}" 
-					placeholder="<?php p($l->t('1 Main Street')); ?>"
+					placeholder="<?php p($l->t('1600 Pennsylvania Avenue, NW')); ?>"
 					title="<?php p($l->t('Street address')); ?>" />
 				</li>
 				<li>
 					<input class="value zip tooltipped rightwards onfocus" type="text" id="adr_5" name="value[5]" value="{adr5}" 
-						placeholder="<?php p($l->t('12345')); ?>"
+						placeholder="<?php p($l->t('20500')); ?>"
 						title="<?php p($l->t('Postal code')); ?>" />
 					<input class="value city tooltipped rightwards onfocus" type="text" id="adr_3" name="value[3]" value="{adr3}" 
-						placeholder="<?php p($l->t('Your city')); ?>"
+						placeholder="<?php p($l->t('Washington, D.C.')); ?>"
 						title="<?php p($l->t('City')); ?>" />
 				</li>
 				<li>
 					<input class="value region tooltipped rightwards onfocus" type="text" id="adr_4" name="value[4]" value="{adr4}" 
-						placeholder="<?php p($l->t('Some region')); ?>"
+						placeholder="<?php p($l->t('District of Columbia')); ?>"
 						title="<?php p($l->t('State or province')); ?>" />
 				</li>
 				<li>
 					<input class="value country tooltipped rightwards onfocus" type="text" id="adr_6" name="value[6]" value="{adr6}" 
-						placeholder="<?php p($l->t('Your country')); ?>"
+						placeholder="<?php p($l->t('USA')); ?>"
 						title="<?php p($l->t('Country')); ?>" />
 				</li>
 			</ul>

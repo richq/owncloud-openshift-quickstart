@@ -86,7 +86,6 @@ class OC_User {
 	 */
 	public static function useBackend( $backend = 'database' ) {
 		if($backend instanceof OC_User_Interface) {
-			OC_Log::write('core', 'Adding user backend instance of '.get_class($backend).'.', OC_Log::DEBUG);
 			self::$_usedBackends[get_class($backend)]=$backend;
 		} else {
 			// You'll never know what happens
@@ -135,7 +134,7 @@ class OC_User {
 					// use Reflection to create a new instance, using the $args
 					$backend = $reflectionObj->newInstanceArgs($arguments);
 					self::useBackend($backend);
-					$_setupedBackends[]=$i;
+					self::$_setupedBackends[] = $i;
 				} else {
 					OC_Log::write('core', 'User backend '.$class.' already initialized.', OC_Log::DEBUG);
 				}
@@ -393,13 +392,14 @@ class OC_User {
 	 * @brief Set password
 	 * @param $uid The username
 	 * @param $password The new password
+	 * @param $recoveryPassword for the encryption app to reset encryption keys
 	 * @returns true/false
 	 *
 	 * Change the password of a user
 	 */
-	public static function setPassword( $uid, $password ) {
+	public static function setPassword( $uid, $password, $recoveryPassword = null ) {
 		$run = true;
-		OC_Hook::emit( "OC_User", "pre_setPassword", array( "run" => &$run, "uid" => $uid, "password" => $password ));
+		OC_Hook::emit( "OC_User", "pre_setPassword", array( "run" => &$run, "uid" => $uid, "password" => $password, "recoveryPassword" => $recoveryPassword ));
 
 		if( $run ) {
 			$success = false;
@@ -412,7 +412,7 @@ class OC_User {
 			}
 			// invalidate all login cookies
 			OC_Preferences::deleteApp($uid, 'login_token');
-			OC_Hook::emit( "OC_User", "post_setPassword", array( "uid" => $uid, "password" => $password ));
+			OC_Hook::emit( "OC_User", "post_setPassword", array( "uid" => $uid, "password" => $password, "recoveryPassword" => $recoveryPassword ));
 			return $success;
 		}
 		else{
@@ -527,7 +527,7 @@ class OC_User {
 		foreach (self::$_usedBackends as $backend) {
 			$backendDisplayNames = $backend->getDisplayNames($search, $limit, $offset);
 			if (is_array($backendDisplayNames)) {
-				$displayNames = array_merge($displayNames, $backendDisplayNames);
+				$displayNames = $displayNames + $backendDisplayNames;
 			}
 		}
 		asort($displayNames);
@@ -610,6 +610,10 @@ class OC_User {
 	public static function isEnabled($userid) {
 		$sql = 'SELECT `userid` FROM `*PREFIX*preferences`'
 			.' WHERE `userid` = ? AND `appid` = ? AND `configkey` = ? AND `configvalue` = ?';
+		if (OC_Config::getValue( 'dbtype', 'sqlite' ) === 'oci') { //FIXME oracle hack
+			$sql = 'SELECT `userid` FROM `*PREFIX*preferences`'
+				.' WHERE `userid` = ? AND `appid` = ? AND `configkey` = ? AND to_char(`configvalue`) = ?';
+		}
 		$stmt = OC_DB::prepare($sql);
 		if ( ! OC_DB::isError($stmt) ) {
 			$result = $stmt->execute(array($userid, 'core', 'enabled', 'false'));

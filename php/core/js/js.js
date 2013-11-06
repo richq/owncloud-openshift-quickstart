@@ -7,7 +7,10 @@
  */
 var oc_debug;
 var oc_webroot;
-var oc_requesttoken;
+
+var oc_current_user = document.getElementsByTagName('head')[0].getAttribute('data-user');
+var oc_requesttoken = document.getElementsByTagName('head')[0].getAttribute('data-requesttoken');
+
 if (typeof oc_webroot === "undefined") {
 	oc_webroot = location.pathname.substr(0, location.pathname.lastIndexOf('/'));
 }
@@ -223,8 +226,12 @@ var OC={
 		var path=OC.filePath(app,'css',style+'.css');
 		if(OC.addStyle.loaded.indexOf(path)===-1){
 			OC.addStyle.loaded.push(path);
-			style=$('<link rel="stylesheet" type="text/css" href="'+path+'"/>');
-			$('head').append(style);
+			if (document.createStyleSheet) {
+				document.createStyleSheet(path);
+			} else {
+				style=$('<link rel="stylesheet" type="text/css" href="'+path+'"/>');
+				$('head').append(style);
+			}
 		}
 	},
 	basename: function(path) {
@@ -363,6 +370,44 @@ OC.Notification={
 OC.Breadcrumb={
 	container:null,
 	crumbs:[],
+	show:function(dir, leafname, leaflink){
+		OC.Breadcrumb.clear();
+		
+		// show home + path in subdirectories
+		if (dir && dir !== '/') {
+			//add home
+			var link = OC.linkTo('files','index.php');
+
+			var crumb=$('<div/>');
+			crumb.addClass('crumb');
+
+			var crumbLink=$('<a/>');
+			crumbLink.attr('href',link);
+
+			var crumbImg=$('<img/>');
+			crumbImg.attr('src',OC.imagePath('core','places/home'));
+			crumbLink.append(crumbImg);
+			crumb.append(crumbLink);
+			OC.Breadcrumb.container.prepend(crumb);
+			OC.Breadcrumb.crumbs.push(crumb);
+
+			//add path parts
+			var segments = dir.split('/');
+			var pathurl = '';
+			jQuery.each(segments, function(i,name) {
+				if (name !== '') {
+					pathurl = pathurl+'/'+name;
+					var link = OC.linkTo('files','index.php')+'?dir='+encodeURIComponent(pathurl);
+					OC.Breadcrumb.push(name, link);
+				}
+			});
+		}
+		
+		//add leafname
+		if (leafname && leaflink) {
+				OC.Breadcrumb.push(leafname, leaflink);
+		}
+	},
 	push:function(name, link){
 		if(!OC.Breadcrumb.container){//default
 			OC.Breadcrumb.container=$('#controls');
@@ -380,7 +425,7 @@ OC.Breadcrumb={
 			existing.removeClass('last');
 			existing.last().after(crumb);
 		}else{
-			OC.Breadcrumb.container.append(crumb);
+			OC.Breadcrumb.container.prepend(crumb);
 		}
 		OC.Breadcrumb.crumbs.push(crumb);
 		return crumb;
@@ -638,8 +683,7 @@ $(document).ready(function(){
 	});
 
 	// 'show password' checkbox
-	$('#password').showPassword();
-	$('#adminpass').showPassword();	
+	$('#adminpass').showPassword();
 	$('#pass2').showPassword();
 
 	//use infield labels
@@ -826,6 +870,26 @@ OC.set=function(name, value) {
 	context[tail]=value;
 };
 
+/**
+ * select a range in an input field
+ * @link http://stackoverflow.com/questions/499126/jquery-set-cursor-position-in-text-area
+ * @param {type} start
+ * @param {type} end
+ */
+$.fn.selectRange = function(start, end) {
+	return this.each(function() {
+		if (this.setSelectionRange) {
+			this.focus();
+			this.setSelectionRange(start, end);
+		} else if (this.createTextRange) {
+			var range = this.createTextRange();
+			range.collapse(true);
+			range.moveEnd('character', end);
+			range.moveStart('character', start);
+			range.select();
+		}
+	});
+};
 
 /**
  * Calls the server periodically every 15 mins to ensure that session doesnt

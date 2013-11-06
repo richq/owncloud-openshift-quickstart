@@ -32,7 +32,7 @@
 			<field>
 				<name>configvalue</name>
 				<type>clob</type>
-				<notnull>true</notnull>
+				<notnull>false</notnull>
 			</field>
 
 			<index>
@@ -68,7 +68,7 @@
 				<name>id</name>
 				<type>text</type>
 				<default></default>
-				<notnull>true</notnull>
+				<notnull>false</notnull>
 				<length>64</length>
 			</field>
 
@@ -217,7 +217,7 @@
 				<name>path</name>
 				<type>text</type>
 				<default></default>
-				<notnull>true</notnull>
+				<notnull>false</notnull>
 				<length>512</length>
 			</field>
 
@@ -241,7 +241,7 @@
 				<name>name</name>
 				<type>text</type>
 				<default></default>
-				<notnull>true</notnull>
+				<notnull>false</notnull>
 				<length>250</length>
 			</field>
 
@@ -284,6 +284,14 @@
 				<notnull>true</notnull>
 				<length>4</length>
 			</field>
+
+			<field>
+                <name>unencrypted_size</name>
+                <type>integer</type>
+                <default>0</default>
+                <notnull>true</notnull>
+                <length>8</length>
+            </field>
 
 			<field>
 				<name>etag</name>
@@ -867,7 +875,6 @@
 				<name>displayname</name>
 				<type>text</type>
 				<default></default>
-				<notnull>true</notnull>
 				<length>64</length>
 			</field>
 

@@ -90,7 +90,7 @@
 						<span id="numPages" class="toolbarLabel"></span>
 					</div>
 					<div id="toolbarViewerRight">
-						<input id="fileInput" class="fileInput" type="file" oncontextmenu="return false;" style="visibility: hidden; position: fixed; right: 0; top: 0" />
+						<input id="fileInput" class="fileInput" type="file" style="visibility: hidden; position: fixed; right: 0; top: 0" />
 
 
 						<button id="fullscreen" class="toolbarButton fullscreen" title="Switch to Presentation Mode" tabindex="11" data-l10n-id="presentation_mode">
@@ -105,9 +105,10 @@
 							<span data-l10n-id="print_label">Print</span>
 						</button>
 
-						<button id="download" class="toolbarButton download" title="Download" tabindex="14" data-l10n-id="download">
-							<span data-l10n-id="download_label">Download</span>
-						</button>
+                                                <button id="download" class="toolbarButton download" title="Download" tabindex="15" data-l10n-id="download">
+                                                  <span data-l10n-id="download_label">Download</span>
+                                                </button>
+
 						<!-- <div class="toolbarButtonSpacer"></div> -->
 						<a href="#" id="viewBookmark" style="display:none;" class="toolbarButton bookmark" title="Current view (copy or open in new window)" tabindex="15" data-l10n-id="bookmark"><span data-l10n-id="bookmark_label">Current View</span></a>
 					</div>
@@ -123,7 +124,7 @@
 								</button>
 							</div>
 							<span id="scaleSelectContainer" class="dropdownToolbarButton">
-								<select id="scaleSelect" title="Zoom" oncontextmenu="return false;" tabindex="10" data-l10n-id="zoom">
+								<select id="scaleSelect" title="Zoom" tabindex="10" data-l10n-id="zoom">
 									<option id="pageAutoOption" value="auto" selected="selected" data-l10n-id="page_scale_auto">Automatic Zoom</option>
 									<option id="pageActualOption" value="page-actual" data-l10n-id="page_scale_actual">Actual Size</option>
 									<option id="pageFitOption" value="page-fit" data-l10n-id="page_scale_fit">Fit Page</option>
@@ -166,15 +167,15 @@
 		<div id="errorWrapper" hidden='true'>
 			<div id="errorMessageLeft">
 				<span id="errorMessage"></span>
-				<button id="errorShowMore" onclick="" oncontextmenu="return false;" data-l10n-id="error_more_info">
+				<button id="errorShowMore" data-l10n-id="error_more_info">
 					More Information
 				</button>
-				<button id="errorShowLess" onclick="" oncontextmenu="return false;" data-l10n-id="error_less_info" hidden='true'>
+				<button id="errorShowLess" data-l10n-id="error_less_info" hidden='true'>
 					Less Information
 				</button>
 			</div>
 			<div id="errorMessageRight">
-				<button id="errorClose" oncontextmenu="return false;" data-l10n-id="error_close">
+				<button id="errorClose" data-l10n-id="error_close">
 					Close
 				</button>
 			</div>

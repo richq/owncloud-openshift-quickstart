@@ -55,7 +55,12 @@ class Helper {
 				AND `configkey` LIKE ?
 		';
 		if($activeConfigurations) {
-			$query .= ' AND `configvalue` = \'1\'';
+			if(\OC_Config::getValue( 'dbtype', 'sqlite' ) === 'oci') {
+				//FIXME oracle hack: need to explicitly cast CLOB to CHAR for comparison
+				$query .= ' AND to_char(`configvalue`) = \'1\'';
+			} else {
+				$query .= ' AND `configvalue` = \'1\'';
+			}
 		}
 		$query = \OCP\DB::prepare($query);
 
@@ -90,13 +95,46 @@ class Helper {
 				AND `appid` = \'user_ldap\'
 				AND `configkey` NOT IN (\'enabled\', \'installed_version\', \'types\', \'bgjUpdateGroupsLastRun\')
 		');
-		$res = $query->execute(array($prefix.'%'));
+		$delRows = $query->execute(array($prefix.'%'));
 
-		if(\OCP\DB::isError($res)) {
+		if(\OCP\DB::isError($delRows)) {
 			return false;
 		}
 
-		if($res->numRows() == 0) {
+		if($delRows == 0) {
+			return false;
+		}
+
+		return true;
+	}
+
+	/**
+	 * Truncate's the given mapping table
+	 *
+	 * @param string $mapping either 'user' or 'group'
+	 * @return boolean true on success, false otherwise
+	 */
+	static public function clearMapping($mapping) {
+		if($mapping === 'user') {
+			$table = '`*PREFIX*ldap_user_mapping`';
+		} else if ($mapping === 'group') {
+			$table = '`*PREFIX*ldap_group_mapping`';
+		} else {
+			return false;
+		}
+
+		$dbtype = \OCP\Config::getSystemValue('dbtype');
+		if(strpos($dbtype, 'sqlite') !== false
+			|| $dbtype === 'oci') {
+			$query = \OCP\DB::prepare('DELETE FROM '.$table);
+		} else {
+			$query = \OCP\DB::prepare('TRUNCATE '.$table);
+		}
+
+
+		$res = $query->execute();
+
+		if(\OCP\DB::isError($res)) {
 			return false;
 		}
 

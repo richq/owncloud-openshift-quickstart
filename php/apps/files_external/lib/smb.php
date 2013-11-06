@@ -73,7 +73,6 @@ class SMB extends \OC\Files\Storage\StreamWrapper{
 	 * @return bool
 	 */
 	public function hasUpdated($path,$time) {
-		$this->init();
 		if(!$path and $this->root=='/') {
 			// mtime doesn't work for shares, but giving the nature of the backend,
 			// doing a full update is still just fast enough
@@ -90,11 +89,13 @@ class SMB extends \OC\Files\Storage\StreamWrapper{
 	private function shareMTime() {
 		$dh=$this->opendir('');
 		$lastCtime=0;
-		while($file=readdir($dh)) {
-			if ($file!='.' and $file!='..') {
-				$ctime=$this->filemtime($file);
-				if ($ctime>$lastCtime) {
-					$lastCtime=$ctime;
+		if(is_resource($dh)) {
+			while (($file = readdir($dh)) !== false) {
+				if ($file!='.' and $file!='..') {
+					$ctime=$this->filemtime($file);
+					if ($ctime>$lastCtime) {
+						$lastCtime=$ctime;
+					}
 				}
 			}
 		}

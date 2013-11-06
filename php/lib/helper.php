@@ -27,6 +27,7 @@
 class OC_Helper {
 	private static $mimetypes=array();
 	private static $tmpFiles=array();
+	private static $mimetypeIcons = array();
 
 	/**
 	 * @brief Creates an url using a defined route
@@ -159,7 +160,7 @@ class OC_Helper {
 	 */
 	public static function imagePath( $app, $image ) {
 		// Read the selected theme from the config file
-		$theme=OC_Config::getValue( "theme" );
+		$theme = OC_Util::getTheme();
 
 		// Check if the app is in the app folder
 		if( file_exists( OC::$SERVERROOT."/themes/$theme/apps/$app/img/$image" )) {
@@ -187,31 +188,38 @@ class OC_Helper {
 	 *
 	 * Returns the path to the image of this file type.
 	 */
-	public static function mimetypeIcon( $mimetype ) {
-		$alias=array('application/xml'=>'code/xml');
-		if(isset($alias[$mimetype])) {
-			$mimetype=$alias[$mimetype];
+	public static function mimetypeIcon($mimetype) {
+		$alias = array('application/xml' => 'code/xml');
+		if (isset($alias[$mimetype])) {
+			$mimetype = $alias[$mimetype];
+		}
+		if (isset(self::$mimetypeIcons[$mimetype])) {
+			return self::$mimetypeIcons[$mimetype];
 		}
 		// Replace slash and backslash with a minus
-		$mimetype = str_replace( "/", "-", $mimetype );
-		$mimetype = str_replace( "\\", "-", $mimetype );
+		$icon = str_replace('/', '-', $mimetype);
+		$icon = str_replace( '\\', '-', $icon);
 
 		// Is it a dir?
-		if( $mimetype == "dir" ) {
-			return OC::$WEBROOT."/core/img/filetypes/folder.png";
+		if ($mimetype === 'dir') {
+			self::$mimetypeIcons[$mimetype] = OC::$WEBROOT.'/core/img/filetypes/folder.png';
+			return OC::$WEBROOT.'/core/img/filetypes/folder.png';
 		}
 
 		// Icon exists?
-		if( file_exists( OC::$SERVERROOT."/core/img/filetypes/$mimetype.png" )) {
-			return OC::$WEBROOT."/core/img/filetypes/$mimetype.png";
+		if (file_exists(OC::$SERVERROOT.'/core/img/filetypes/'.$icon.'.png')) {
+			self::$mimetypeIcons[$mimetype] = OC::$WEBROOT.'/core/img/filetypes/'.$icon.'.png';
+			return OC::$WEBROOT.'/core/img/filetypes/'.$icon.'.png';
 		}
-		//try only the first part of the filetype
-		$mimetype=substr($mimetype, 0, strpos($mimetype, '-'));
-		if( file_exists( OC::$SERVERROOT."/core/img/filetypes/$mimetype.png" )) {
-			return OC::$WEBROOT."/core/img/filetypes/$mimetype.png";
-		}
-		else{
-			return OC::$WEBROOT."/core/img/filetypes/file.png";
+
+		// Try only the first part of the filetype
+		$mimePart = substr($icon, 0, strpos($icon, '-'));
+		if (file_exists(OC::$SERVERROOT.'/core/img/filetypes/'.$mimePart.'.png')) {
+			self::$mimetypeIcons[$mimetype] = OC::$WEBROOT.'/core/img/filetypes/'.$mimePart.'.png';
+			return OC::$WEBROOT.'/core/img/filetypes/'.$mimePart.'.png';
+		} else {
+			self::$mimetypeIcons[$mimetype] = OC::$WEBROOT.'/core/img/filetypes/file.png';
+			return OC::$WEBROOT.'/core/img/filetypes/file.png';
 		}
 	}
 
@@ -291,18 +299,20 @@ class OC_Helper {
 		if (!is_dir($path))
 			return chmod($path, $filemode);
 		$dh = opendir($path);
-		while (($file = readdir($dh)) !== false) {
-			if($file != '.' && $file != '..') {
-				$fullpath = $path.'/'.$file;
-				if(is_link($fullpath))
-					return false;
-				elseif(!is_dir($fullpath) && !@chmod($fullpath, $filemode))
+		if(is_resource($dh)) {
+			while (($file = readdir($dh)) !== false) {
+				if($file != '.' && $file != '..') {
+					$fullpath = $path.'/'.$file;
+					if(is_link($fullpath))
 						return false;
-				elseif(!self::chmodr($fullpath, $filemode))
-					return false;
+					elseif(!is_dir($fullpath) && !@chmod($fullpath, $filemode))
+							return false;
+					elseif(!self::chmodr($fullpath, $filemode))
+						return false;
+				}
 			}
+			closedir($dh);
 		}
-		closedir($dh);
 		if(@chmod($path, $filemode))
 			return true;
 		else
@@ -797,20 +807,31 @@ class OC_Helper {
 	}
 
 	/**
-	 * Calculate the disc space
+	 * Calculate the disc space for the given path
+	 *
+	 * @param string $path
+	 * @return array
 	 */
-	public static function getStorageInfo() {
-		$rootInfo = \OC\Files\Filesystem::getFileInfo('/');
+	public static function getStorageInfo($path) {
+		$rootInfo = \OC\Files\Filesystem::getFileInfo($path);
 		$used = $rootInfo['size'];
 		if ($used < 0) {
 			$used = 0;
 		}
-		$free = \OC\Files\Filesystem::free_space();
-		$total = $free + $used;
+		$free = \OC\Files\Filesystem::free_space($path);
+		if ($free >= 0) {
+			$total = $free + $used;
+		} else {
+			$total = $free; //either unknown or unlimited
+		}
 		if ($total == 0) {
 			$total = 1; // prevent division by zero
 		}
-		$relative = round(($used / $total) * 10000) / 100;
+		if ($total >= 0) {
+			$relative = round(($used / $total) * 10000) / 100;
+		} else {
+			$relative = 0;
+		}
 
 		return array('free' => $free, 'used' => $used, 'total' => $total, 'relative' => $relative);
 	}

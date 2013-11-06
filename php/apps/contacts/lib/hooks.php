@@ -56,7 +56,9 @@ class Hooks{
 		$addressbooks = Addressbook::all($parameters['uid']);
 
 		foreach($addressbooks as $addressbook) {
-			Addressbook::delete($addressbook['id']);
+			if($parameters['uid'] === $addressbook['userid']) {
+				Addressbook::delete($addressbook['id']);
+			}
 		}
 
 		return true;
@@ -94,7 +96,7 @@ class Hooks{
 			$birthday = $vcard->BDAY;
 			if ((string)$birthday) {
 				$title = str_replace('{name}',
-					$vcard->FN,
+					strtr((string)$vcard->FN, array('\,' => ',', '\;' => ';')),
 					App::$l10n->t('{name}\'s Birthday'));
 				
 				$date = new \DateTime($birthday);

@@ -22,9 +22,9 @@ OC.Share={
 					if (itemType != 'file' && itemType != 'folder') {
 						$('a.share[data-item="'+item+'"]').css('background', 'url('+image+') no-repeat center');
 					} else {
-						var file = $('tr').filterAttr('data-id', item);
+						var file = $('tr[data-id="'+item+'"]');
 						if (file.length > 0) {
-							var action = $(file).find('.fileactions .action').filterAttr('data-action', 'Share');
+							var action = $(file).find('.fileactions .action[data-action="Share"]');
 							var img = action.find('img').attr('src', image);
 							action.addClass('permanent');
 							action.html(' '+t('core', 'Shared')).prepend(img);
@@ -36,7 +36,7 @@ OC.Share={
 								// Search for possible parent folders that are shared
 								while (path != last) {
 									if (path == data['path']) {
-										var actions = $('.fileactions .action').filterAttr('data-action', 'Share');
+										var actions = $('.fileactions .action[data-action="Share"]');
 										$.each(actions, function(index, action) {
 											var img = $(action).find('img');
 											if (img.attr('src') != OC.imagePath('core', 'actions/public')) {
@@ -92,6 +92,7 @@ OC.Share={
 			}
 		}
 		if (shares) {
+			OC.Share.statuses[itemSource] = OC.Share.statuses[itemSource] || {};
 			OC.Share.statuses[itemSource]['link'] = link;
 		} else {
 			delete OC.Share.statuses[itemSource];
@@ -122,7 +123,12 @@ OC.Share={
 					callback(result.data);
 				}
 			} else {
-				OC.dialogs.alert(result.data.message, t('core', 'Error while sharing'));
+				if (result.data && result.data.message) {
+					var msg = result.data.message;
+				} else {
+					var msg = t('core', 'Error');
+				}
+				OC.dialogs.alert(msg, t('core', 'Error while sharing'));
 			}
 		});
 	},
@@ -133,14 +139,14 @@ OC.Share={
 					callback();
 				}
 			} else {
-				OC.dialogs.alert(t('core', 'Error'), t('core', 'Error while unsharing'));
+				OC.dialogs.alert(t('core', 'Error while unsharing'), t('core', 'Error'));
 			}
 		});
 	},
 	setPermissions:function(itemType, itemSource, shareType, shareWith, permissions) {
 		$.post(OC.filePath('core', 'ajax', 'share.php'), { action: 'setPermissions', itemType: itemType, itemSource: itemSource, shareType: shareType, shareWith: shareWith, permissions: permissions }, function(result) {
 			if (!result || result.status !== 'success') {
-				OC.dialogs.alert(t('core', 'Error'), t('core', 'Error while changing permissions'));
+				OC.dialogs.alert(t('core', 'Error while changing permissions'), t('core', 'Error'));
 			}
 		});
 	},
@@ -149,13 +155,31 @@ OC.Share={
 		var html = '<div id="dropdown" class="drop" data-item-type="'+itemType+'" data-item-source="'+itemSource+'">';
 		if (data !== false && data.reshare !== false && data.reshare.uid_owner !== undefined) {
 			if (data.reshare.share_type == OC.Share.SHARE_TYPE_GROUP) {
-				html += '<span class="reshare">'+t('core', 'Shared with you and the group {group} by {owner}', {group: data.reshare.share_with, owner: data.reshare.displayname_owner})+'</span>';
+				html += '<span class="reshare">'+t('core', 'Shared with you and the group {group} by {owner}', {group: escapeHTML(data.reshare.share_with), owner: escapeHTML(data.reshare.displayname_owner)})+'</span>';
 			} else {
-				html += '<span class="reshare">'+t('core', 'Shared with you by {owner}', {owner: data.reshare.displayname_owner})+'</span>';
+				html += '<span class="reshare">'+t('core', 'Shared with you by {owner}', {owner: escapeHTML(data.reshare.displayname_owner)})+'</span>';
 			}
 			html += '<br />';
 		}
 		if (possiblePermissions & OC.PERMISSION_SHARE) {
+			// Determine the Allow Public Upload status.
+			// Used later on to determine if the
+			// respective checkbox should be checked or
+			// not.
+
+			var publicUploadEnabled = $('#filestable').data('allow-public-upload');
+			if (typeof publicUploadEnabled == 'undefined') {
+				publicUploadEnabled = 'no';
+			}
+			var allowPublicUploadStatus = false;
+
+			$.each(data.shares, function(key, value) {
+				if (value.share_type === OC.Share.SHARE_TYPE_LINK) {
+					allowPublicUploadStatus = (value.permissions & OC.PERMISSION_CREATE) ? true : false;
+					return true;
+				}
+			});
+
 			html += '<input id="shareWith" type="text" placeholder="'+t('core', 'Share with')+'" />';
 			html += '<ul id="shareWithList">';
 			html += '</ul>';
@@ -168,12 +192,18 @@ OC.Share={
 				html += '<div id="linkPass">';
 				html += '<input id="linkPassText" type="password" placeholder="'+t('core', 'Password')+'" />';
 				html += '</div>';
-				html += '</div>';
-				html += '<form id="emailPrivateLink" >';
+				if (itemType === 'folder' && (possiblePermissions & OC.PERMISSION_CREATE) && publicUploadEnabled === 'yes') {
+					html += '<div id="allowPublicUploadWrapper" style="display:none;">';
+					html += '<input type="checkbox" value="1" name="allowPublicUpload" id="sharingDialogAllowPublicUpload"' + ((allowPublicUploadStatus) ? 'checked="checked"' : '') + ' />';
+					html += '<label for="sharingDialogAllowPublicUpload">' + t('core', 'Allow Public Upload') + '</label>';
+					html += '</div>';
+				}
+				html += '</div><form id="emailPrivateLink" >';
 				html += '<input id="email" style="display:none; width:62%;" value="" placeholder="'+t('core', 'Email link to person')+'" type="text" />';
 				html += '<input id="emailButton" style="display:none;" type="submit" value="'+t('core', 'Send')+'" />';
 				html += '</form>';
 			}
+
 			html += '<div id="expiration">';
 			html += '<input type="checkbox" name="expirationCheckbox" id="expirationCheckbox" value="1" /><label for="expirationCheckbox">'+t('core', 'Set expiration date')+'</label>';
 			html += '<input id="expirationDate" type="text" placeholder="'+t('core', 'Expiration date')+'" style="display:none; width:90%;" />';
@@ -359,6 +389,7 @@ OC.Share={
 		$('#expiration').show();
 		$('#emailPrivateLink #email').show();
 		$('#emailPrivateLink #emailButton').show();
+		$('#allowPublicUploadWrapper').show();
 	},
 	hideLink:function() {
 		$('#linkText').hide('blind');
@@ -367,6 +398,7 @@ OC.Share={
 		$('#linkPass').hide();
 		$('#emailPrivateLink #email').hide();
 		$('#emailPrivateLink #emailButton').hide();
+		$('#allowPublicUploadWrapper').hide();
 	},
 	dirname:function(path) {
 		return path.replace(/\\/g,'/').replace(/\/[^\/]*$/, '');
@@ -532,25 +564,70 @@ $(document).ready(function() {
 		$(this).select();
 	});
 
+	// Handle the Allow Public Upload Checkbox
+	$(document).on('click', '#sharingDialogAllowPublicUpload', function() {
+
+		// Gather data
+		var allowPublicUpload = $(this).is(':checked');
+		var itemType = $('#dropdown').data('item-type');
+		var itemSource = $('#dropdown').data('item-source');
+		var permissions = 0;
+
+		// Calculate permissions
+		if (allowPublicUpload) {
+			permissions = OC.PERMISSION_UPDATE + OC.PERMISSION_CREATE + OC.PERMISSION_READ;
+		} else {
+			permissions = OC.PERMISSION_READ;
+		}
+
+		// Update the share information
+		OC.Share.share(itemType, itemSource, OC.Share.SHARE_TYPE_LINK, '', permissions, function(data) {
+		});
+	});
+
 	$(document).on('click', '#dropdown #showPassword', function() {
 		$('#linkPass').toggle('blind');
 		if (!$('#showPassword').is(':checked') ) {
 			var itemType = $('#dropdown').data('item-type');
 			var itemSource = $('#dropdown').data('item-source');
-			OC.Share.share(itemType, itemSource, OC.Share.SHARE_TYPE_LINK, '', OC.PERMISSION_READ);
+			var allowPublicUpload = $('#sharingDialogAllowPublicUpload').is(':checked');
+			var permissions = 0;
+
+			// Calculate permissions
+			if (allowPublicUpload) {
+				permissions = OC.PERMISSION_UPDATE + OC.PERMISSION_CREATE + OC.PERMISSION_READ;
+			} else {
+				permissions = OC.PERMISSION_READ;
+			}
+
+
+			OC.Share.share(itemType, itemSource, OC.Share.SHARE_TYPE_LINK, '', permissions);
 		} else {
 			$('#linkPassText').focus();
 		}
 	});
 
 	$(document).on('focusout keyup', '#dropdown #linkPassText', function(event) {
-		if ( $('#linkPassText').val() != '' && (event.type == 'focusout' || event.keyCode == 13) ) {
-			var itemType = $('#dropdown').data('item-type');
-			var itemSource = $('#dropdown').data('item-source');
-			OC.Share.share(itemType, itemSource, OC.Share.SHARE_TYPE_LINK, $('#linkPassText').val(), OC.PERMISSION_READ, function() {
-				console.log("password set to: '" + $('#linkPassText').val() +"' by event: " + event.type);
-				$('#linkPassText').val('');
-				$('#linkPassText').attr('placeholder', t('core', 'Password protected'));
+		var linkPassText = $('#linkPassText');
+		if ( linkPassText.val() != '' && (event.type == 'focusout' || event.keyCode == 13) ) {
+
+			var allowPublicUpload = $('#sharingDialogAllowPublicUpload').is(':checked');
+			var dropDown = $('#dropdown');
+			var itemType = dropDown.data('item-type');
+			var itemSource = dropDown.data('item-source');
+			var permissions = 0;
+
+			// Calculate permissions
+			if (allowPublicUpload) {
+				permissions = OC.PERMISSION_UPDATE + OC.PERMISSION_CREATE + OC.PERMISSION_READ;
+			} else {
+				permissions = OC.PERMISSION_READ;
+			}
+
+			OC.Share.share(itemType, itemSource, OC.Share.SHARE_TYPE_LINK, $('#linkPassText').val(), permissions, function() {
+				console.log("password set to: '" + linkPassText.val() +"' by event: " + event.type);
+				linkPassText.val('');
+				linkPassText.attr('placeholder', t('core', 'Password protected'));
 			});
 		}
 	});
@@ -563,7 +640,7 @@ $(document).ready(function() {
 			var itemSource = $('#dropdown').data('item-source');
 			$.post(OC.filePath('core', 'ajax', 'share.php'), { action: 'setExpirationDate', itemType: itemType, itemSource: itemSource, date: '' }, function(result) {
 				if (!result || result.status !== 'success') {
-					OC.dialogs.alert(t('core', 'Error'), t('core', 'Error unsetting expiration date'));
+					OC.dialogs.alert(t('core', 'Error unsetting expiration date'), t('core', 'Error'));
 				}
 				$('#expirationDate').hide();
 			});
@@ -575,7 +652,7 @@ $(document).ready(function() {
 		var itemSource = $('#dropdown').data('item-source');
 		$.post(OC.filePath('core', 'ajax', 'share.php'), { action: 'setExpirationDate', itemType: itemType, itemSource: itemSource, date: $(this).val() }, function(result) {
 			if (!result || result.status !== 'success') {
-				OC.dialogs.alert(t('core', 'Error'), t('core', 'Error setting expiration date'));
+				OC.dialogs.alert(t('core', 'Error setting expiration date'), t('core', 'Error'));
 			}
 		});
 	});

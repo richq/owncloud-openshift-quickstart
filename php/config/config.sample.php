@@ -56,7 +56,10 @@ $CONFIG = array(
 /* Theme to use for ownCloud */
 "theme" => "",
 
-/* Path to the 3rdparty directory */
+/* Optional ownCLoud default language - overrides automatic language detection on public pages like login or shared items. This has no effect on the users's language preference configured under "personal -> language" once they have logged in */
+"default_language" => "en",
+
+/* Path to the parent directory of the 3rdparty directory */
 "3rdpartyroot" => "",
 
 /* URL to the 3rdparty directory, as seen by the browser */
@@ -135,8 +138,15 @@ $CONFIG = array(
 /* Lifetime of the remember login cookie, default is 15 days */
 "remember_login_cookie_lifetime" => 60*60*24*15,
 
+/* Life time of a session after inactivity */
+"session_lifetime" => 60 * 60 * 24,
+
 /* Custom CSP policy, changing this will overwrite the standard policy */
-"custom_csp_policy" => "default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; frame-src *; img-src *; font-src 'self' data:",
+"custom_csp_policy" => "default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; frame-src *; img-src *; font-src 'self' data:; media-src *",
+
+/* Enable/disable X-Frame-Restriction */
+/* HIGH SECURITY RISK IF DISABLED*/
+"xframe_restriction" => true,
 
 /* The directory where the user data is stored, default to data in the owncloud
  * directory. The sqlite database is also stored here, when sqlite is used.
@@ -168,5 +178,8 @@ $CONFIG = array(
 //links to custom clients
 'customclient_desktop' => '', //http://owncloud.org/sync-clients/
 'customclient_android' => '', //https://play.google.com/store/apps/details?id=com.owncloud.android
-'customclient_ios' => '' //https://itunes.apple.com/us/app/owncloud/id543672169?mt=8
+'customclient_ios' => '', //https://itunes.apple.com/us/app/owncloud/id543672169?mt=8
+
+// date format to be used while writing to the owncloud logfile
+'logdateformat' => 'F d, Y H:i:s'
 );

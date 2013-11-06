@@ -21,6 +21,10 @@ namespace OC\Files\Storage;
  */
 
 abstract class Common implements \OC\Files\Storage\Storage {
+	private $cache;
+	private $scanner;
+	private $permissioncache;
+	private $watcher;
 
 	public function __construct($parameters) {
 	}
@@ -133,27 +137,23 @@ abstract class Common implements \OC\Files\Storage\Storage {
 	 */
 	public function deleteAll($directory, $empty = false) {
 		$directory = trim($directory, '/');
-
-		if (!$this->file_exists(\OCP\USER::getUser() . '/' . $directory)
-			|| !$this->is_dir(\OCP\USER::getUser() . '/' . $directory)
-		) {
-			return false;
-		} elseif (!$this->isReadable(\OCP\USER::getUser() . '/' . $directory)) {
+		if (!$this->is_dir($directory) || !$this->isReadable($directory)) {
 			return false;
 		} else {
-			$directoryHandle = $this->opendir(\OCP\USER::getUser() . '/' . $directory);
-			while ($contents = readdir($directoryHandle)) {
-				if ($contents != '.' && $contents != '..') {
-					$path = $directory . "/" . $contents;
-					if ($this->is_dir($path)) {
-						$this->deleteAll($path);
-					} else {
-						$this->unlink(\OCP\USER::getUser() . '/' . $path); // TODO: make unlink use same system path as is_dir
+			$directoryHandle = $this->opendir($directory);
+			if(is_resource($directoryHandle)) {
+				while (($contents = readdir($directoryHandle)) !== false) {
+					if (!\OC\Files\Filesystem::isIgnoredDir($contents)) {
+						$path = $directory . '/' . $contents;
+						if ($this->is_dir($path)) {
+							$this->deleteAll($path);
+						} else {
+							$this->unlink($path);
+						}
 					}
 				}
 			}
-			//$this->closedir( $directoryHandle ); // TODO: implement closedir in OC_FSV
-			if ($empty == false) {
+			if ($empty === false) {
 				if (!$this->rmdir($directory)) {
 					return false;
 				}
@@ -226,7 +226,10 @@ abstract class Common implements \OC\Files\Storage\Storage {
 
 	private function addLocalFolder($path, $target) {
 		if ($dh = $this->opendir($path)) {
-			while ($file = readdir($dh)) {
+			if(!is_resource($dh)) {
+				return  null;
+			}
+			while (($file = readdir($dh)) !== false) {
 				if ($file !== '.' and $file !== '..') {
 					if ($this->is_dir($path . '/' . $file)) {
 						mkdir($target . '/' . $file);
@@ -243,8 +246,8 @@ abstract class Common implements \OC\Files\Storage\Storage {
 	protected function searchInDir($query, $dir = '') {
 		$files = array();
 		$dh = $this->opendir($dir);
-		if ($dh) {
-			while ($item = readdir($dh)) {
+		if (is_resource($dh)) {
+			while (($item = readdir($dh)) !== false) {
 				if ($item == '.' || $item == '..') continue;
 				if (strstr(strtolower($item), strtolower($query)) !== false) {
 					$files[] = $dir . '/' . $item;
@@ -269,19 +272,31 @@ abstract class Common implements \OC\Files\Storage\Storage {
 	}
 
 	public function getCache($path = '') {
-		return new \OC\Files\Cache\Cache($this);
+		if (!isset($this->cache)) {
+			$this->cache = new \OC\Files\Cache\Cache($this);
+		}
+		return $this->cache;
 	}
 
 	public function getScanner($path = '') {
-		return new \OC\Files\Cache\Scanner($this);
+		if (!isset($this->scanner)) {
+			$this->scanner = new \OC\Files\Cache\Scanner($this);
+		}
+		return $this->scanner;
 	}
 
 	public function getPermissionsCache($path = '') {
-		return new \OC\Files\Cache\Permissions($this);
+		if (!isset($this->permissioncache)) {
+			$this->permissioncache = new \OC\Files\Cache\Permissions($this);
+		}
+		return $this->permissioncache;
 	}
 
 	public function getWatcher($path = '') {
-		return new \OC\Files\Cache\Watcher($this);
+		if (!isset($this->watcher)) {
+			$this->watcher = new \OC\Files\Cache\Watcher($this);
+		}
+		return $this->watcher;
 	}
 
 	/**

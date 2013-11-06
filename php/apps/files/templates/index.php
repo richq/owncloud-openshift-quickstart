@@ -32,7 +32,7 @@
 						   value="(max <?php p($_['uploadMaxHumanFilesize']); ?>)">
 					<input type="hidden" name="dir" value="<?php p($_['dir']) ?>" id="dir">
 					<input type="file" id="file_upload_start" name='files[]'/>
-					<a href="#" class="svg" onclick="return false;"></a>
+					<a href="#" class="svg"></a>
 				</form>
 			</div>
 			<?php if ($_['trash'] ): ?>
@@ -44,13 +44,12 @@
 				<div id="uploadprogressbar"></div>
 				<input type="button" class="stop" style="display:none"
 					value="<?php p($l->t('Cancel upload'));?>"
-					onclick="javascript:Files.cancelUploads();"
 				/>
 			</div>
 		</div>
 		<div id="file_action_panel"></div>
-	<?php else:?>
-		<div class="crumb last"><?php p($l->t('You don’t have write permissions here.'))?></div>
+	<?php elseif( !$_['isPublic'] ):?>
+		<div class="actions"><input type="button" disabled value="<?php p($l->t('You don’t have write permissions here.'))?>"></div>
 		<input type="hidden" name="dir" value="<?php p($_['dir']) ?>" id="dir">
 	<?php endif;?>
 	<input type="hidden" name="permissions" value="<?php p($_['permissions']); ?>" id="permissions">
@@ -60,7 +59,7 @@
 	<div id="emptyfolder"><?php p($l->t('Nothing in here. Upload something!'))?></div>
 <?php endif; ?>
 
-<table id="filestable">
+<table id="filestable" data-allow-public-upload="<?php p($_['publicUploadEnabled'])?>">
 	<thead>
 		<tr>
 			<th id='headerName'>

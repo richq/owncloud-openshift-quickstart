@@ -8,6 +8,8 @@
 OC_Util::checkLoggedIn();
 OC_App::loadApps();
 
+$defaults = new OC_Defaults(); // initialize themable default strings and urls
+
 // Highlight navigation entry
 OC_Util::addScript( 'settings', 'personal' );
 OC_Util::addStyle( 'settings', 'settings' );
@@ -15,7 +17,7 @@ OC_Util::addScript( '3rdparty', 'chosen/chosen.jquery.min' );
 OC_Util::addStyle( '3rdparty', 'chosen' );
 OC_App::setActiveNavigationEntry( 'personal' );
 
-$storageInfo=OC_Helper::getStorageInfo();
+$storageInfo=OC_Helper::getStorageInfo('/');
 
 $email=OC_Preferences::getValue(OC_User::getUser(), 'settings', 'email', '');
 
@@ -51,7 +53,7 @@ array_unshift($languages, $userLang);
 
 //links to clients
 $clients = array(
-	'desktop' => OC_Config::getValue('customclient_desktop', 'http://owncloud.org/sync-clients/'),
+	'desktop' => OC_Config::getValue('customclient_desktop', $defaults->getSyncClientUrl()),
 	'android' => OC_Config::getValue('customclient_android', 'https://play.google.com/store/apps/details?id=com.owncloud.android'),
 	'ios'     => OC_Config::getValue('customclient_ios', 'https://itunes.apple.com/us/app/owncloud/id543672169?mt=8')
 );

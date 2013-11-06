@@ -31,6 +31,15 @@ $_['subadmingroups'] = array_flip($items);
 			<?php endforeach;?>
 		</select> <input type="submit" value="<?php p($l->t('Create'))?>" />
 	</form>
+	<?php if((bool)$_['recoveryAdminEnabled']): ?>
+	<div class="recoveryPassword">
+	<input id="recoveryPassword"
+		   type="password"
+		   placeholder="<?php p($l->t('Admin Recovery Password'))?>"
+		   title="<?php p($l->t('Enter the recovery password in order to recover the users files during password change'))?>"
+		   alt="<?php p($l->t('Enter the recovery password in order to recover the users files during password change'))?>"/>
+	</div>
+	<?php endif; ?>
 	<div class="quota">
 		<span><?php p($l->t('Default Storage'));?></span>
 			<?php if((bool) $_['isadmin']): ?>
@@ -55,7 +64,7 @@ $_['subadmingroups'] = array_flip($items);
 					<?php p($_['default_quota']);?>
 				</option>
 				<?php endif;?>
-				<option value='other'>
+				<option data-new value='other'>
 					<?php p($l->t('Other'));?>
 					...
 				</option>
@@ -71,7 +80,7 @@ $_['subadmingroups'] = array_flip($items);
 	</div>
 </div>
 
-<table class="hascontrols" data-groups="<?php p(implode(', ', $allGroups));?>">
+<table class="hascontrols" data-groups="<?php p(json_encode($allGroups));?>">
 	<thead>
 		<tr>
 			<th id='headerName'><?php p($l->t('Login Name'))?></th>
@@ -101,7 +110,7 @@ $_['subadmingroups'] = array_flip($items);
 			<td class="groups"><select
 				class="groupsselect"
 				data-username="<?php p($user['name']) ;?>"
-				data-user-groups="<?php p($user['groups']) ;?>"
+				data-user-groups="<?php p(json_encode($user['groups'])) ;?>"
 				data-placeholder="groups" title="<?php p($l->t('Groups'))?>"
 				multiple="multiple">
 					<?php foreach($_["groups"] as $group): ?>
@@ -115,7 +124,7 @@ $_['subadmingroups'] = array_flip($items);
 			<td class="subadmins"><select
 				class="subadminsselect"
 				data-username="<?php p($user['name']) ;?>"
-				data-subadmin="<?php p($user['subadmin']);?>"
+				data-subadmin="<?php p(json_encode($user['subadmin']));?>"
 				data-placeholder="subadmins" title="<?php p($l->t('Group Admin'))?>"
 				multiple="multiple">
 					<?php foreach($_["subadmingroups"] as $group): ?>

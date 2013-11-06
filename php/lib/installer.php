@@ -109,10 +109,12 @@ class OC_Installer{
 		if(!is_file($extractDir.'/appinfo/info.xml')) {
 			//try to find it in a subdir
 			$dh=opendir($extractDir);
-			while($folder=readdir($dh)) {
-				if($folder[0]!='.' and is_dir($extractDir.'/'.$folder)) {
-					if(is_file($extractDir.'/'.$folder.'/appinfo/info.xml')) {
-						$extractDir.='/'.$folder;
+			if(is_resource($dh)) {
+				while (($folder = readdir($dh)) !== false) {
+					if($folder[0]!='.' and is_dir($extractDir.'/'.$folder)) {
+						if(is_file($extractDir.'/'.$folder.'/appinfo/info.xml')) {
+							$extractDir.='/'.$folder;
+						}
 					}
 				}
 			}
@@ -135,7 +137,7 @@ class OC_Installer{
 
 		// check if the app is compatible with this version of ownCloud
 		$version=OC_Util::getVersion();
-		if(!isset($info['require']) or ($version[0]>$info['require'])) {
+		if(!isset($info['require']) or !OC_App::isAppVersionCompatible($version, $info['require'])) {
 			OC_Log::write('core',
 				'App can\'t be installed because it is not compatible with this version of ownCloud',
 				OC_Log::ERROR);
